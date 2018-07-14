@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.github.gquintana.metrics</groupId>
+    <groupId>com.github.pjfanning</groupId>
     <artifactId>metrics-sql</artifactId>
-    <version>3.2.2-SNAPSHOT</version>
+    <version>4.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Metrics SQL</name>
 
@@ -186,13 +186,13 @@
         </license>
     </licenses>
     <scm>
-        <url>scm:git:git@github.com:gquintana/metrics-sql.git</url>
-        <connection>scm:git:git@github.com:gquintana/metrics-sql.git</connection>
-        <developerConnection>scm:git:git@github.com:gquintana/metrics-sql.git</developerConnection>
+        <url>scm:git:git@github.com:pjfanning/metrics-sql.git</url>
+        <connection>scm:git:git@github.com:pjfanning/metrics-sql.git</connection>
+        <developerConnection>scm:git:git@github.com:pjfanning/metrics-sql.git</developerConnection>
     </scm>
     <issueManagement>
         <system>github</system>
-        <url>http://github.com/gquintana/metrics-sql/issues</url>
+        <url>http://github.com/pjfanning/metrics-sql/issues</url>
     </issueManagement>
     <distributionManagement>
         <snapshotRepository>
