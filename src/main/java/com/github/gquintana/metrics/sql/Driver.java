@@ -34,11 +34,20 @@ import java.util.logging.Logger;
  */
 public class Driver implements java.sql.Driver {
     private static final Driver INSTANCE = new Driver();
+    private static MeterRegistry REGISTRY = new CompositeMeterRegistry();
     private static boolean registered = false;
     private final Logger parentLogger = Logger.getLogger("com.github.gquintana.metrics");
 
     static {
         register();
+    }
+
+    public static void setMeterRegistry(MeterRegistry registry) {
+        REGISTRY = registry;
+    }
+
+    public static MeterRegistry getMeterRegistry() {
+        return REGISTRY;
     }
 
     private static synchronized void register() {
@@ -96,7 +105,7 @@ public class Driver implements java.sql.Driver {
             return null;
         }
         DriverUrl driverUrl = DriverUrl.parse(url);
-        MeterRegistry registry = getMetricRegistry(driverUrl);
+        MeterRegistry registry = getMeterRegistry();
         ProxyFactory factory = newInstance(driverUrl.getProxyFactoryClass());
         MetricNamingStrategy namingStrategy = getMetricNamingStrategy(driverUrl);
         JdbcProxyFactory proxyFactory = new JdbcProxyFactory(registry, namingStrategy, factory);
@@ -118,12 +127,6 @@ public class Driver implements java.sql.Driver {
         return databaseName == null ? newInstance(namingStrategyClass) : newInstance(namingStrategyClass, databaseName);
     }
 
-    private MeterRegistry getMetricRegistry(DriverUrl driverUrl) {
-        String registryName = driverUrl.getRegistryName();
-        MeterRegistry registry = new CompositeMeterRegistry();
-        return registry;
-    }
-
     @Override
     public boolean acceptsURL(String url) throws SQLException {
         return url != null && url.startsWith(DriverUrl.URL_PREFIX);
@@ -138,12 +141,12 @@ public class Driver implements java.sql.Driver {
 
     @Override
     public int getMajorVersion() {
-        return 3;
+        return 4;
     }
 
     @Override
     public int getMinorVersion() {
-        return 1;
+        return 0;
     }
 
     @Override
