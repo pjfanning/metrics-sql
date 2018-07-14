@@ -2,8 +2,6 @@ package com.github.gquintana.metrics.sql;
 
 import org.junit.Test;
 
-import java.util.regex.Pattern;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.*;
 

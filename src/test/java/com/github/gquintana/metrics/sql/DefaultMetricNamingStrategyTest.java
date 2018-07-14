@@ -1,7 +1,5 @@
 package com.github.gquintana.metrics.sql;
 
-import com.github.gquintana.metrics.sql.DefaultMetricNamingStrategy;
-import com.github.gquintana.metrics.sql.StrictMetricNamingStrategy;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.equalTo;

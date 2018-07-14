@@ -20,7 +20,7 @@ package com.github.gquintana.metrics.sql;
  * #L%
  */
 
-import com.codahale.metrics.MetricRegistry;
+import io.micrometer.core.instrument.dropwizard.DropwizardMeterRegistry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,17 +38,17 @@ import static org.junit.Assert.*;
  * Test Statement wrapper
  */
 public class StatementTest {
-    private MetricRegistry metricRegistry;
+    private DropwizardMeterRegistry meterRegistry;
     private DataSource rawDataSource;
     private DataSource dataSource;
     @Before
     public void setUp() throws SQLException {
-        metricRegistry = new MetricRegistry();
+        meterRegistry = MeterRegistryHelper.createDropwizardMeterRegistry();
         rawDataSource = H2DbUtil.createDataSource();
         try(Connection connection = rawDataSource.getConnection()) {
             H2DbUtil.initTable(connection);
         }
-        dataSource = MetricsSql.forRegistry(metricRegistry).wrap(rawDataSource);
+        dataSource = MetricsSql.forRegistry(meterRegistry).wrap(rawDataSource);
     }
     @After
     public void tearDown() throws SQLException {
@@ -66,7 +66,7 @@ public class StatementTest {
         // Assert
         assertNotNull(connection);
         assertTrue(Proxy.isProxyClass(statement.getClass()));
-        assertNotNull(metricRegistry.getTimers().get("java.sql.Statement"));
+        assertNotNull(meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.Statement"));
         
     }
     @Test
@@ -80,7 +80,7 @@ public class StatementTest {
         // Assert
         assertNotNull(connection);
         assertTrue(Proxy.isProxyClass(resultSet.getClass()));
-        assertEquals(1, metricRegistry.getTimers().get("java.sql.Statement.[select * from metrics_test].exec").getCount());
+        assertEquals(1, meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.Statement.[select * from metrics_test].exec").getCount());
         
     }
 
@@ -88,14 +88,14 @@ public class StatementTest {
     public void testStatementExec_Direct() throws SQLException {
         // Act
         Connection connection = rawDataSource.getConnection();
-        Statement statement = MetricsSql.forRegistry(metricRegistry).wrap(connection.createStatement());
+        Statement statement = MetricsSql.forRegistry(meterRegistry).wrap(connection.createStatement());
         ResultSet resultSet = statement.executeQuery("select * from METRICS_TEST order by ID");
 
         H2DbUtil.close(resultSet, statement, connection);
         // Assert
         assertNotNull(connection);
         assertTrue(Proxy.isProxyClass(resultSet.getClass()));
-        assertEquals(1, metricRegistry.getTimers().get("java.sql.Statement.[select * from metrics_test order by id].exec").getCount());
+        assertEquals(1, meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.Statement.[select * from metrics_test order by id].exec").getCount());
     }
 
     @Test
@@ -112,7 +112,7 @@ public class StatementTest {
         
         H2DbUtil.close(resultSet, statement, connection);
         // Assert
-        assertEquals(0, metricRegistry.getTimers().get("java.sql.Statement.[select * from unknown_table].exec").getCount());
+        assertEquals(0, meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.Statement.[select * from unknown_table].exec").getCount());
         
     }
 }

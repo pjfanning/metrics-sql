@@ -21,13 +21,15 @@ package com.github.gquintana.metrics.sql;
  */
 
 import com.codahale.metrics.JmxReporter;
-import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.ObjectNameFactory;
 import com.github.gquintana.metrics.util.SqlObjectNameFactory;
+import io.micrometer.core.instrument.dropwizard.DropwizardMeterRegistry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import javax.sql.DataSource;
 import java.lang.management.ManagementFactory;
 import java.sql.*;
@@ -37,7 +39,7 @@ import java.sql.*;
  */
 public class JmxReportingTest {
     private MBeanServer mBeanServer;
-    private MetricRegistry metricRegistry;
+    private DropwizardMeterRegistry meterRegistry;
     private JdbcProxyFactory proxyFactory;
     private DataSource rawDataSource;
     private DataSource dataSource;
@@ -46,19 +48,20 @@ public class JmxReportingTest {
     @Before
     public void setUp() throws SQLException {
         mBeanServer=ManagementFactory.getPlatformMBeanServer();
-        metricRegistry = new MetricRegistry();
-        jmxReporter = JmxReporter.forRegistry(metricRegistry)
+        meterRegistry = MeterRegistryHelper.createDropwizardMeterRegistry();
+        jmxReporter = JmxReporter.forRegistry(meterRegistry.getDropwizardRegistry())
                 .registerWith(mBeanServer)
-                .createsObjectNamesWith(new SqlObjectNameFactory())
+                .createsObjectNamesWith(new ProxyObjectNameFactory())
                 .build();
         jmxReporter.start();
-        proxyFactory = new JdbcProxyFactory(metricRegistry);
+        proxyFactory = new JdbcProxyFactory(meterRegistry);
         rawDataSource = H2DbUtil.createDataSource();
         try(Connection connection = rawDataSource.getConnection()) {
             H2DbUtil.initTable(connection);
         }
         dataSource = proxyFactory.wrapDataSource(rawDataSource);
     }
+
     @After
     public void tearDown() throws SQLException {
         jmxReporter.stop();
@@ -67,6 +70,7 @@ public class JmxReportingTest {
         }
         H2DbUtil.close(dataSource);
     }
+
     @Test
     public void testJmxReporting() throws SQLException {
         Connection connection = dataSource.getConnection();
@@ -84,5 +88,13 @@ public class JmxReportingTest {
             Timestamp timestamp = resultSet.getTimestamp("created");
         }
         H2DbUtil.close(resultSet, statement, preparedStatement, connection);
+    }
+
+    class ProxyObjectNameFactory implements ObjectNameFactory {
+        private final SqlObjectNameFactory factory = new SqlObjectNameFactory();
+        @Override
+        public ObjectName createName(String type, String domain, String name) {
+            return factory.createName(type, domain, name);
+        }
     }
 }

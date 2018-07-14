@@ -20,45 +20,53 @@ package com.github.gquintana.metrics.sql;
  * #L%
  */
 
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Start {@link com.codahale.metrics.Timer}s and increments {@link com.codahale.metrics.Meter}s
+ * Start <code>Timer</code>s and increments <code>Counter</code>s
  * Internal helper class.
  */
 class MetricHelper {
-    private final MetricRegistry metricRegistry;
+    private final MeterRegistry meterRegistry;
     private final MetricNamingStrategy metricNamingStrategy;
+    private final ConcurrentHashMap<String, Timer> timerMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Counter> counterMap = new ConcurrentHashMap<>();
 
     /**
      * Constructor
-     * @param metricRegistry Registry storing metrics
+     * @param meterRegistry Registry storing metrics
      * @param metricNamingStrategy Strategy to name metrics
      */
-    MetricHelper(MetricRegistry metricRegistry, MetricNamingStrategy metricNamingStrategy) {
-        this.metricRegistry = metricRegistry;
+    MetricHelper(MeterRegistry meterRegistry, MetricNamingStrategy metricNamingStrategy) {
+        this.meterRegistry = meterRegistry;
         this.metricNamingStrategy = metricNamingStrategy;
     }
 
-    private Timer.Context startTimer(String name) {
+    private TimeObservation startTimer(String name) {
         if (name == null) {
             return null;
         }
-        return metricRegistry.timer(name).time();
+        Timer timer = timerMap.computeIfAbsent(name, n -> Timer.builder(n).register(meterRegistry));
+        return new TimeObservation(timer, System.nanoTime());
     }
-    private void markMeter(String name) {
+
+    private void incCounter(String name) {
         if (name == null) {
             return;
         }
-        metricRegistry.meter(name).mark();
+        Counter counter = counterMap.computeIfAbsent(name, n -> Counter.builder(n).register(meterRegistry));
+        counter.increment();
     }
 
-    public Timer.Context startConnectionLifeTimer() {
+    public TimeObservation startConnectionLifeTimer() {
         return startTimer(metricNamingStrategy.getConnectionLifeTimer());
     }
 
-    public Timer.Context startConnectionGetTimer() {
+    public TimeObservation startConnectionGetTimer() {
         return startTimer(metricNamingStrategy.getConnectionGetTimer());
     }
 
@@ -67,7 +75,7 @@ class MetricHelper {
      *
      * @return Started timer context or null
      */
-    public Timer.Context startStatementLifeTimer() {
+    public TimeObservation startStatementLifeTimer() {
         return startTimer(metricNamingStrategy.getStatementLifeTimer());
     }
     /**
@@ -76,7 +84,7 @@ class MetricHelper {
      * @param query SQL query
      * @return Started timer context or null
      */
-    public Timer.Context startStatementExecuteTimer(Query query) {
+    public TimeObservation startStatementExecuteTimer(Query query) {
         ensureSqlId(query);
         String name = metricNamingStrategy.getStatementExecuteTimer(query.getSql(), query.getSqlId());
         return startTimer(name);
@@ -91,7 +99,7 @@ class MetricHelper {
      *
      * @return Started timer context or null
      */
-    public Timer.Context startPreparedStatementLifeTimer(Query query) {
+    public TimeObservation startPreparedStatementLifeTimer(Query query) {
         ensureSqlId(query);
         String name = metricNamingStrategy.getPreparedStatementLifeTimer(query.getSql(), query.getSqlId());
         return startTimer(name);
@@ -102,7 +110,7 @@ class MetricHelper {
      *
      * @return Started timer context or null
      */
-    public Timer.Context startPreparedStatementExecuteTimer(Query query) {
+    public TimeObservation startPreparedStatementExecuteTimer(Query query) {
         ensureSqlId(query);
         String name = metricNamingStrategy.getPreparedStatementExecuteTimer(query.getSql(), query.getSqlId());
         return startTimer(name);
@@ -120,7 +128,7 @@ class MetricHelper {
      *
      * @return Started timer context or null
      */
-    public Timer.Context startCallableStatementLifeTimer(Query query) {
+    public TimeObservation startCallableStatementLifeTimer(Query query) {
         ensureSqlId(query);
         String name = metricNamingStrategy.getCallableStatementLifeTimer(query.getSql(), query.getSqlId());
         return startTimer(name);
@@ -131,7 +139,7 @@ class MetricHelper {
      *
      * @return Started timer context or null
      */
-    public Timer.Context startCallableStatementExecuteTimer(Query query) {
+    public TimeObservation startCallableStatementExecuteTimer(Query query) {
         ensureSqlId(query);
         String name = metricNamingStrategy.getCallableStatementExecuteTimer(query.getSql(), query.getSqlId());
         return startTimer(name);
@@ -142,7 +150,7 @@ class MetricHelper {
      *
      * @return Started timer context or null
      */
-    public Timer.Context startResultSetLifeTimer(Query query) {
+    public TimeObservation startResultSetLifeTimer(Query query) {
         ensureSqlId(query);
         String name = metricNamingStrategy.getResultSetLifeTimer(query.getSql(), query.getSqlId());
         return startTimer(name);
@@ -153,6 +161,6 @@ class MetricHelper {
     public void markResultSetRowMeter(Query query) {
         ensureSqlId(query);
         String name = metricNamingStrategy.getResultSetRowMeter(query.getSql(), query.getSqlId());
-        markMeter(name);
+        incCounter(name);
     }
 }

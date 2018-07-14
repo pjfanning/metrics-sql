@@ -20,7 +20,7 @@ package com.github.gquintana.metrics.sql;
  * #L%
  */
 
-import com.codahale.metrics.MetricRegistry;
+import io.micrometer.core.instrument.dropwizard.DropwizardMeterRegistry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,17 +38,17 @@ import static org.junit.Assert.*;
  * Test Statement wrapper
  */
 public class CallableStatementTest {
-    private MetricRegistry metricRegistry;
+    private DropwizardMeterRegistry meterRegistry;
     private DataSource rawDataSource;
     private DataSource dataSource;
     @Before
     public void setUp() throws SQLException {
-        metricRegistry = new MetricRegistry();
+        meterRegistry = MeterRegistryHelper.createDropwizardMeterRegistry();
         rawDataSource = H2DbUtil.createDataSource();
         try(Connection connection = rawDataSource.getConnection()) {
             H2DbUtil.initTable(connection);
         }
-        dataSource = MetricsSql.forRegistry(metricRegistry).wrap(rawDataSource);
+        dataSource = MetricsSql.forRegistry(meterRegistry).wrap(rawDataSource);
     }
     @After
     public void tearDown() throws SQLException {
@@ -66,7 +66,7 @@ public class CallableStatementTest {
         // Assert
         assertNotNull(connection);
         assertTrue(Proxy.isProxyClass(statement.getClass()));
-        assertNotNull(metricRegistry.getTimers().get("java.sql.CallableStatement.[select * from metrics_test]"));
+        assertNotNull(meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.CallableStatement.[select * from metrics_test]"));
         
     }
     @Test
@@ -79,7 +79,7 @@ public class CallableStatementTest {
         // Assert
         assertNotNull(connection);
         assertTrue(Proxy.isProxyClass(resultSet.getClass()));
-        assertNotNull(metricRegistry.getTimers().get("java.sql.CallableStatement.[select * from metrics_test].exec"));
+        assertNotNull(meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.CallableStatement.[select * from metrics_test].exec"));
         
     }
     @Test(expected = Exception.class)
@@ -92,7 +92,7 @@ public class CallableStatementTest {
         // Assert
         assertNotNull(connection);
         assertTrue(Proxy.isProxyClass(resultSet.getClass()));
-        assertNotNull(metricRegistry.getTimers().get("java.sql.CallableStatement.[select * from metrics_test order by created desc].exec"));
+        assertNotNull(meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.CallableStatement.[select * from metrics_test order by created desc].exec"));
         
     }
 
@@ -101,13 +101,13 @@ public class CallableStatementTest {
         // Act
         Connection connection = rawDataSource.getConnection();
         String sql = "select * from METRICS_TEST order by ID";
-        CallableStatement statement = MetricsSql.forRegistry(metricRegistry).wrap(connection.prepareCall(sql), sql);
+        CallableStatement statement = MetricsSql.forRegistry(meterRegistry).wrap(connection.prepareCall(sql), sql);
         ResultSet resultSet = statement.executeQuery();
         H2DbUtil.close(resultSet, statement, connection);
         // Assert
         assertNotNull(connection);
         assertTrue(Proxy.isProxyClass(resultSet.getClass()));
-        assertEquals(1, metricRegistry.getTimers().get("java.sql.CallableStatement.[select * from metrics_test order by id].exec").getCount());
+        assertEquals(1, meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.CallableStatement.[select * from metrics_test order by id].exec").getCount());
     }
 
 }

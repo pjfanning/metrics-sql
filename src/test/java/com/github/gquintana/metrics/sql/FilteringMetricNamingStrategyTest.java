@@ -20,8 +20,8 @@ package com.github.gquintana.metrics.sql;
  * #L%
  */
 
-import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import io.micrometer.core.instrument.dropwizard.DropwizardMeterRegistry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,14 +37,14 @@ import static org.junit.Assert.*;
  *
  */
 public class FilteringMetricNamingStrategyTest {
-    private MetricRegistry metricRegistry;
+    private DropwizardMeterRegistry meterRegistry;
     private JdbcProxyFactory proxyFactory;
     private DataSource rawDataSource;
     private DataSource dataSource;
     @Before
     public void setUp() throws SQLException {
-        metricRegistry = new MetricRegistry();
-        proxyFactory = new JdbcProxyFactory(metricRegistry, new FilteringMetricNamingStrategy());
+        meterRegistry = MeterRegistryHelper.createDropwizardMeterRegistry();
+        proxyFactory = new JdbcProxyFactory(meterRegistry, new FilteringMetricNamingStrategy());
         rawDataSource = H2DbUtil.createDataSource();
         try(Connection connection = rawDataSource.getConnection()) {
             H2DbUtil.initTable(connection);
@@ -67,7 +67,7 @@ public class FilteringMetricNamingStrategyTest {
         H2DbUtil.close(resultSet, statement, connection);
         // Assert
         assertTrue(Proxy.isProxyClass(statement.getClass()));
-        final SortedMap<String, Timer> timers = metricRegistry.getTimers();
+        final SortedMap<String, Timer> timers = meterRegistry.getDropwizardRegistry().getTimers();
         assertNull(timers.get("java.sql.Connection"));
         assertNull(timers.get("java.sql.PreparedStatement.[select * from metrics_test]"));
         assertNotNull(timers.get("java.sql.PreparedStatement.[select * from metrics_test].exec"));
@@ -82,7 +82,7 @@ public class FilteringMetricNamingStrategyTest {
         H2DbUtil.close(resultSet, statement, connection);
         // Assert
         assertTrue(Proxy.isProxyClass(statement.getClass()));
-        final SortedMap<String, Timer> timers = metricRegistry.getTimers();
+        final SortedMap<String, Timer> timers = meterRegistry.getDropwizardRegistry().getTimers();
         assertNull(timers.get("java.sql.Connection"));
         assertNull(timers.get("java.sql.CallableStatement.[select * from metrics_test]"));
         assertNotNull(timers.get("java.sql.CallableStatement.[select * from metrics_test].exec"));

@@ -21,7 +21,6 @@ package com.github.gquintana.metrics.sql;
  */
 
 
-import com.codahale.metrics.Timer;
 import com.github.gquintana.metrics.proxy.MethodInvocation;
 
 import java.sql.CallableStatement;
@@ -33,7 +32,7 @@ public class CallableStatementProxyHandler extends AbstractStatementProxyHandler
 
     private final Query query;
 
-    public CallableStatementProxyHandler(CallableStatement delegate, JdbcProxyFactory proxyFactory, Query query, Timer.Context lifeTimerContext) {
+    public CallableStatementProxyHandler(CallableStatement delegate, JdbcProxyFactory proxyFactory, Query query, TimeObservation lifeTimerContext) {
         super(delegate, CallableStatement.class, proxyFactory, lifeTimerContext);
         this.query = query;
     }
@@ -45,7 +44,7 @@ public class CallableStatementProxyHandler extends AbstractStatementProxyHandler
         } else {
             currentQuery = this.query;
         }
-        Timer.Context timerContext = getTimerStarter().startCallableStatementExecuteTimer(currentQuery);
+        TimeObservation timerContext = getTimerStarter().startCallableStatementExecuteTimer(currentQuery);
         Object result = methodInvocation.proceed();
         stopTimer(timerContext);
         return wrapResultSet(currentQuery, result);

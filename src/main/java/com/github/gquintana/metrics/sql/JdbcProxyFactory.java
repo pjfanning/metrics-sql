@@ -21,10 +21,9 @@ package com.github.gquintana.metrics.sql;
  */
 
 
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import com.github.gquintana.metrics.proxy.ProxyFactory;
 import com.github.gquintana.metrics.proxy.ReflectProxyFactory;
+import io.micrometer.core.instrument.MeterRegistry;
 
 import javax.sql.*;
 import javax.sql.rowset.*;
@@ -49,7 +48,7 @@ public class JdbcProxyFactory {
      * Constructor using default {@link ReflectProxyFactory} and default {@link DefaultMetricNamingStrategy}
      * @param metricRegistry Metric registry to store metrics
      */
-    public JdbcProxyFactory(MetricRegistry metricRegistry) {
+    public JdbcProxyFactory(MeterRegistry metricRegistry) {
         this(metricRegistry, new DefaultMetricNamingStrategy());
     }
 
@@ -59,7 +58,7 @@ public class JdbcProxyFactory {
      * @param registry Registry storing metrics
      * @param namingStrategy Naming strategy used to get metrics from SQL
      */
-    public JdbcProxyFactory(MetricRegistry registry, MetricNamingStrategy namingStrategy) {
+    public JdbcProxyFactory(MeterRegistry registry, MetricNamingStrategy namingStrategy) {
         this(registry, namingStrategy, new ReflectProxyFactory());
     }
 
@@ -70,10 +69,11 @@ public class JdbcProxyFactory {
      * @param namingStrategy Naming strategy used to get metrics from SQL
      * @param proxyFactory AbstractProxyFactory to use for proxy creation
      */
-    public JdbcProxyFactory(MetricRegistry registry, MetricNamingStrategy namingStrategy, ProxyFactory proxyFactory) {
+    public JdbcProxyFactory(MeterRegistry registry, MetricNamingStrategy namingStrategy, ProxyFactory proxyFactory) {
         this.metricHelper = new MetricHelper(registry, namingStrategy);
         this.proxyFactory = proxyFactory;
     }
+
     /**
      * Create a proxy for given JDBC proxy handler
      * @param <T> Proxy type
@@ -101,7 +101,7 @@ public class JdbcProxyFactory {
      * @return Wrapped connection
      */
     public Connection wrapConnection(Connection wrappedConnection) {
-        Timer.Context lifeTimerContext = metricHelper.startConnectionLifeTimer();
+        TimeObservation lifeTimerContext = metricHelper.startConnectionLifeTimer();
         return newProxy(new ConnectionProxyHandler(wrappedConnection, this, lifeTimerContext));
     }
     
@@ -112,7 +112,7 @@ public class JdbcProxyFactory {
      * @return Wrapped statement
      */
     public Statement wrapStatement(Statement statement) {
-        Timer.Context lifeTimerContext = getMetricHelper().startStatementLifeTimer();
+        TimeObservation lifeTimerContext = getMetricHelper().startStatementLifeTimer();
         return newProxy(new StatementProxyHandler(statement, this, lifeTimerContext));
     }
 
@@ -125,7 +125,7 @@ public class JdbcProxyFactory {
      */
     public PreparedStatement wrapPreparedStatement(PreparedStatement preparedStatement, String sql) {
         Query query = new Query(sql);
-        Timer.Context lifeTimerContext = getMetricHelper().startPreparedStatementLifeTimer(query);
+        TimeObservation lifeTimerContext = getMetricHelper().startPreparedStatementLifeTimer(query);
         return newProxy(new PreparedStatementProxyHandler(preparedStatement, this, query, lifeTimerContext));
     }
 
@@ -138,7 +138,7 @@ public class JdbcProxyFactory {
      */
     public CallableStatement wrapCallableStatement(CallableStatement callableStatement, String sql) {
         Query query = new Query(sql);
-        Timer.Context lifeTimerContext = getMetricHelper().startCallableStatementLifeTimer(query);
+        TimeObservation lifeTimerContext = getMetricHelper().startCallableStatementLifeTimer(query);
         return newProxy(new CallableStatementProxyHandler(callableStatement, this, query, lifeTimerContext));
     }
 
@@ -151,7 +151,7 @@ public class JdbcProxyFactory {
      */
     public ResultSet wrapResultSet(ResultSet resultSet, String sql) {
         Query query = new Query(sql);
-        Timer.Context lifeTimerContext = metricHelper.startResultSetLifeTimer(query);
+        TimeObservation lifeTimerContext = metricHelper.startResultSetLifeTimer(query);
         return (ResultSet) newProxy(new ResultSetProxyHandler(resultSet, getResultSetType(resultSet), this, query, lifeTimerContext));
     }
 
@@ -163,7 +163,7 @@ public class JdbcProxyFactory {
      * @param lifeTimerContext Started timer
      * @return Wrapped prepared statement
      */
-    public ResultSet wrapResultSet(ResultSet resultSet, Query query, Timer.Context lifeTimerContext) {
+    public ResultSet wrapResultSet(ResultSet resultSet, Query query, TimeObservation lifeTimerContext) {
         return (ResultSet) newProxy(new ResultSetProxyHandler(resultSet, getResultSetType(resultSet), this, query, lifeTimerContext));
     }
     /**

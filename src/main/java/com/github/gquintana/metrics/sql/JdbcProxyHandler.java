@@ -21,7 +21,6 @@ package com.github.gquintana.metrics.sql;
  */
 
 
-import com.codahale.metrics.Timer;
 import com.github.gquintana.metrics.proxy.MethodInvocation;
 import com.github.gquintana.metrics.proxy.ProxyClass;
 import com.github.gquintana.metrics.proxy.ProxyHandler;
@@ -43,7 +42,7 @@ public abstract class JdbcProxyHandler<T> extends ProxyHandler<T> {
     /**
      * Timer measuring this proxy lifetime
      */
-    private final Timer.Context lifeTimerContext;
+    private final TimeObservation lifeTimerContext;
     /**
      * Parent factory of proxy factories
      */
@@ -57,7 +56,7 @@ public abstract class JdbcProxyHandler<T> extends ProxyHandler<T> {
      * @param proxyFactory Parent factory
      * @param lifeTimerContext Proxy life timer context
      */
-    protected JdbcProxyHandler(T delegate, Class<T> delegateType, JdbcProxyFactory proxyFactory, Timer.Context lifeTimerContext) {
+    protected JdbcProxyHandler(T delegate, Class<T> delegateType, JdbcProxyFactory proxyFactory, TimeObservation lifeTimerContext) {
         super(delegate);
         this.delegateType = delegateType;
         this.proxyFactory = proxyFactory;
@@ -82,9 +81,9 @@ public abstract class JdbcProxyHandler<T> extends ProxyHandler<T> {
         return methodInvocation.proceed();
     }
 
-    protected static void stopTimer(Timer.Context timerContext) {
+    protected static void stopTimer(TimeObservation timerContext) {
         if (timerContext != null) {
-            timerContext.stop();
+            timerContext.close();
         }
     }
 

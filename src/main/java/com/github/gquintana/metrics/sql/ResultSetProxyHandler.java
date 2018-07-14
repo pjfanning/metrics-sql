@@ -20,8 +20,6 @@ package com.github.gquintana.metrics.sql;
  * #L%
  */
 
-
-import com.codahale.metrics.Timer;
 import com.github.gquintana.metrics.proxy.MethodInvocation;
 
 import java.sql.ResultSet;
@@ -34,7 +32,7 @@ import java.sql.ResultSet;
 public class ResultSetProxyHandler<T extends ResultSet> extends JdbcProxyHandler<T> {
     private final Query query;
 
-    public ResultSetProxyHandler(T delegate, Class<T> delegateType, JdbcProxyFactory proxyFactory, Query query, Timer.Context lifeTimerContext) {
+    public ResultSetProxyHandler(T delegate, Class<T> delegateType, JdbcProxyFactory proxyFactory, Query query, TimeObservation lifeTimerContext) {
         super(delegate, delegateType, proxyFactory, lifeTimerContext);
 
         this.query = query;

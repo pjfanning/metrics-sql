@@ -25,6 +25,7 @@ import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 import com.github.gquintana.metrics.proxy.ReflectProxyFactory;
+import io.micrometer.core.instrument.dropwizard.DropwizardMeterRegistry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,8 +43,11 @@ import static org.junit.Assert.assertThat;
  * Metering test
  */
 public class MeteringTest {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(MeteringTest.class);
-    private MetricRegistry metricRegistry;
+
+    private DropwizardMeterRegistry meterRegistry;
+
     private JdbcProxyFactory proxyFactory;
     private DataSource rawDataSource;
     private DataSource dataSource;
@@ -51,8 +55,8 @@ public class MeteringTest {
 
     @Before
     public void setUp() throws SQLException {
-        metricRegistry = new MetricRegistry();
-        metricsReporter = Slf4jReporter.forRegistry(metricRegistry)
+        meterRegistry = MeterRegistryHelper.createDropwizardMeterRegistry();
+        metricsReporter = Slf4jReporter.forRegistry(meterRegistry.getDropwizardRegistry())
                 .outputTo(LOGGER)
                 .withLoggingLevel(Slf4jReporter.LoggingLevel.INFO)
                 .build();
@@ -60,7 +64,7 @@ public class MeteringTest {
         try (Connection connection = rawDataSource.getConnection()) {
             H2DbUtil.initTable(connection);
         }
-        proxyFactory = MetricsSql.forRegistry(metricRegistry)
+        proxyFactory = MetricsSql.forRegistry(meterRegistry)
                 .withProxyFactory(new ReflectProxyFactory()).build();
         dataSource = proxyFactory.wrapDataSource(rawDataSource);
     }
@@ -106,8 +110,13 @@ public class MeteringTest {
             H2DbUtil.close(resultSet, preparedStatement, connection);
         }
 
-        metricsReporter.report(metricRegistry.getGauges(), metricRegistry.getCounters(), metricRegistry.getHistograms(), metricRegistry.getMeters(), metricRegistry.getTimers());
-        assertThat(metricRegistry.getTimers().size(), equalTo(
+        MetricRegistry dropwizardMetricRegistry = meterRegistry.getDropwizardRegistry();
+        metricsReporter.report(dropwizardMetricRegistry.getGauges(),
+                dropwizardMetricRegistry.getCounters(),
+                dropwizardMetricRegistry.getHistograms(),
+                dropwizardMetricRegistry.getMeters(),
+                dropwizardMetricRegistry.getTimers());
+        assertThat(dropwizardMetricRegistry.getTimers().size(), equalTo(
                 2 // connection
                 +2 // inserts
                 +5 // statements
@@ -115,27 +124,27 @@ public class MeteringTest {
                 ));
 
         // connection
-        Timer timer = metricRegistry.timer("java.sql.Connection");
+        Timer timer = dropwizardMetricRegistry.timer("java.sql.Connection");
         assertThat(timer.getCount(), equalTo((long) iterations));
-        timer = metricRegistry.timer("java.sql.Connection.get");
+        timer = dropwizardMetricRegistry.timer("java.sql.Connection.get");
         assertThat(timer.getCount(), equalTo((long) iterations));
 
         // statement
-        timer = metricRegistry.timer("java.sql.Statement");
+        timer = dropwizardMetricRegistry.timer("java.sql.Statement");
         assertThat(timer.getCount(), equalTo((long) iterations));
-        timer = metricRegistry.timer("java.sql.Statement.[select count(*) from metrics_test].exec");
+        timer = dropwizardMetricRegistry.timer("java.sql.Statement.[select count(*) from metrics_test].exec");
         assertThat(timer.getCount(), equalTo((long) iterations));
-        timer = metricRegistry.timer("java.sql.Statement.[select * from metrics_test order by id asc].exec");
+        timer = dropwizardMetricRegistry.timer("java.sql.Statement.[select * from metrics_test order by id asc].exec");
         assertThat(timer.getCount(), equalTo((long) iterations));
 
         // prepared statement
-        timer = metricRegistry.timer("java.sql.PreparedStatement.[insert into metrics_test(id, text, created) values (?,?,?)].exec");
+        timer = dropwizardMetricRegistry.timer("java.sql.PreparedStatement.[insert into metrics_test(id, text, created) values (?,?,?)].exec");
         assertThat(timer.getCount(), equalTo((long) iterations * inserts));
 
-        timer = metricRegistry.timer("java.sql.PreparedStatement.[insert into metrics_test(id, text, created) values (?,?,?)]");
+        timer = dropwizardMetricRegistry.timer("java.sql.PreparedStatement.[insert into metrics_test(id, text, created) values (?,?,?)]");
         assertThat(timer.getCount(), equalTo((long) iterations));
 
-        timer = metricRegistry.timer("java.sql.PreparedStatement.[select * from metrics_test where text=? order by id asc].exec");
+        timer = dropwizardMetricRegistry.timer("java.sql.PreparedStatement.[select * from metrics_test where text=? order by id asc].exec");
         assertThat(timer.getCount(), equalTo((long) iterations));
         Snapshot timerSnapshot = timer.getSnapshot();
         double preparedStatementExecMean = timerSnapshot.getMean();
@@ -143,7 +152,7 @@ public class MeteringTest {
         assertThat(timerSnapshot.getMax(), greaterThan(0L));
         assertThat(timerSnapshot.getMax(), greaterThan(timerSnapshot.getMin()));
 
-        timer = metricRegistry.timer("java.sql.PreparedStatement.[select * from metrics_test where text=? order by id asc]");
+        timer = dropwizardMetricRegistry.timer("java.sql.PreparedStatement.[select * from metrics_test where text=? order by id asc]");
         assertThat(timer.getCount(), equalTo((long) iterations));
         timerSnapshot = timer.getSnapshot();
         assertThat(timerSnapshot.getMean(), greaterThan(preparedStatementExecMean));

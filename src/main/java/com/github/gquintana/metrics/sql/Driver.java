@@ -20,14 +20,12 @@ package com.github.gquintana.metrics.sql;
  * #L%
  */
 
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.SharedMetricRegistries;
-import com.codahale.metrics.Timer;
 import com.github.gquintana.metrics.proxy.ProxyFactory;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 
 import java.lang.reflect.Constructor;
 import java.sql.*;
-import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -98,17 +96,17 @@ public class Driver implements java.sql.Driver {
             return null;
         }
         DriverUrl driverUrl = DriverUrl.parse(url);
-        MetricRegistry registry = getMetricRegistry(driverUrl);
+        MeterRegistry registry = getMetricRegistry(driverUrl);
         ProxyFactory factory = newInstance(driverUrl.getProxyFactoryClass());
         MetricNamingStrategy namingStrategy = getMetricNamingStrategy(driverUrl);
         JdbcProxyFactory proxyFactory = new JdbcProxyFactory(registry, namingStrategy, factory);
         // Force Driver loading
         Class<? extends Driver> driverClass = driverUrl.getDriverClass();
         // Open connection
-        Timer.Context getTimerContext = proxyFactory.getMetricHelper().startConnectionGetTimer();
+        TimeObservation getTimerContext = proxyFactory.getMetricHelper().startConnectionGetTimer();
         Connection rawConnection = DriverManager.getConnection(driverUrl.getCleanUrl(), info);
         if (getTimerContext != null) {
-            getTimerContext.stop();
+            getTimerContext.close();
         }
         // Wrap connection
         return proxyFactory.wrapConnection(rawConnection);
@@ -120,17 +118,9 @@ public class Driver implements java.sql.Driver {
         return databaseName == null ? newInstance(namingStrategyClass) : newInstance(namingStrategyClass, databaseName);
     }
 
-    private MetricRegistry getMetricRegistry(DriverUrl driverUrl) {
+    private MeterRegistry getMetricRegistry(DriverUrl driverUrl) {
         String registryName = driverUrl.getRegistryName();
-        MetricRegistry registry;
-        if (registryName == null) {
-            registry = SharedMetricRegistries.tryGetDefault();
-            if (registry == null) {
-                registry = SharedMetricRegistries.getOrCreate("default");
-            }
-        } else {
-            registry = SharedMetricRegistries.getOrCreate(registryName);
-        }
+        MeterRegistry registry = new CompositeMeterRegistry();
         return registry;
     }
 

@@ -21,7 +21,6 @@ package com.github.gquintana.metrics.sql;
  */
 
 
-import com.codahale.metrics.Timer;
 import com.github.gquintana.metrics.proxy.MethodInvocation;
 
 import java.sql.ResultSet;
@@ -34,7 +33,7 @@ import java.sql.Statement;
  */
 public abstract class AbstractStatementProxyHandler<T extends Statement> extends JdbcProxyHandler<T> {
 
-    public AbstractStatementProxyHandler(T delegate, Class<T> delegateType, JdbcProxyFactory proxyFactory, Timer.Context lifeTimerContext) {
+    public AbstractStatementProxyHandler(T delegate, Class<T> delegateType, JdbcProxyFactory proxyFactory, TimeObservation lifeTimerContext) {
         super(delegate, delegateType, proxyFactory, lifeTimerContext);
     }
 
@@ -67,7 +66,7 @@ public abstract class AbstractStatementProxyHandler<T extends Statement> extends
 
     protected Object wrapResultSet(Query query, Object result) {
         if (result instanceof ResultSet) {
-            Timer.Context timerContext1 = getTimerStarter().startResultSetLifeTimer(query);
+            TimeObservation timerContext1 = getTimerStarter().startResultSetLifeTimer(query);
             return proxyFactory.wrapResultSet((ResultSet) result, query, timerContext1);
         } else {
             return result;

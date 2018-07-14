@@ -20,11 +20,7 @@ package com.github.gquintana.metrics.sql;
  * #L%
  */
 
-import com.codahale.metrics.MetricRegistry;
-
-import javax.sql.PooledConnection;
 import java.sql.*;
-import java.util.regex.Pattern;
 
 /**
  * Default implementation of {@link MetricNamingStrategy}
@@ -57,12 +53,12 @@ public class DefaultMetricNamingStrategy implements MetricNamingStrategy {
 
     protected String getStatementTimer(Class<? extends Statement> clazz, String sql, String sqlId) {
         final String lSqlId = sqlId == null ? getSqlId(sql) : sqlId;
-        return MetricRegistry.name(clazz, databaseName, lSqlId);
+        return name(clazz, databaseName, lSqlId);
     }
 
     protected String getStatementExecuteTimer(Class<? extends Statement> clazz, String sql, String sqlId) {
         final String lSqlId = sqlId == null ? getSqlId(sql) : sqlId;
-        return MetricRegistry.name(clazz, databaseName, lSqlId, "exec");
+        return name(clazz, databaseName, lSqlId, "exec");
     }
 
     /**
@@ -70,7 +66,7 @@ public class DefaultMetricNamingStrategy implements MetricNamingStrategy {
      * Example: java.sql.Connection.database.get
      */
     public String getConnectionGetTimer() {
-        return MetricRegistry.name(Connection.class, databaseName, "get");
+        return name(Connection.class, databaseName, "get");
     }
 
     /**
@@ -78,7 +74,7 @@ public class DefaultMetricNamingStrategy implements MetricNamingStrategy {
      * Example: java.sql.Connection.database
      */
     public String getConnectionLifeTimer() {
-        return MetricRegistry.name(Connection.class, databaseName);
+        return name(Connection.class, databaseName);
     }
 
     /**
@@ -86,7 +82,7 @@ public class DefaultMetricNamingStrategy implements MetricNamingStrategy {
      * Example: java.sql.Statement.database
      */
     public String getStatementLifeTimer() {
-        return MetricRegistry.name(Statement.class, databaseName);
+        return name(Statement.class, databaseName);
     }
 
     /**
@@ -133,7 +129,7 @@ public class DefaultMetricNamingStrategy implements MetricNamingStrategy {
      * {@inheritDoc}
      */
     public String getResultSetLifeTimer(String sql, String sqlId) {
-        return MetricRegistry.name(ResultSet.class, databaseName, sqlId);
+        return name(ResultSet.class, databaseName, sqlId);
     }
 
     /**
@@ -141,7 +137,7 @@ public class DefaultMetricNamingStrategy implements MetricNamingStrategy {
      */
     @Override
     public String getResultSetRowMeter(String sql, String sqlId) {
-        return MetricRegistry.name(ResultSet.class, databaseName, sqlId, "rows");
+        return name(ResultSet.class, databaseName, sqlId, "rows");
     }
 
     /**
@@ -169,6 +165,37 @@ public class DefaultMetricNamingStrategy implements MetricNamingStrategy {
         public DefaultMetricNamingStrategy build() {
             return new DefaultMetricNamingStrategy(databaseName);
         }
+    }
+
+    public static String name(String name, String... names) {
+        StringBuilder builder = new StringBuilder();
+        append(builder, name);
+        if (names != null) {
+            String[] namesArray = names;
+            int len = names.length;
+
+            for(int i = 0; i < len; ++i) {
+                String s = namesArray[i];
+                append(builder, s);
+            }
+        }
+
+        return builder.toString();
+    }
+
+    public static String name(Class<?> klass, String... names) {
+        return name(klass.getName(), names);
+    }
+
+    private static void append(StringBuilder builder, String part) {
+        if (part != null && !part.isEmpty()) {
+            if (builder.length() > 0) {
+                builder.append('.');
+            }
+
+            builder.append(part);
+        }
+
     }
 
 }

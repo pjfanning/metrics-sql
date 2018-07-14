@@ -20,9 +20,6 @@ package com.github.gquintana.metrics.util;
  * #L%
  */
 
-import com.codahale.metrics.DefaultObjectNameFactory;
-import com.codahale.metrics.ObjectNameFactory;
-
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import java.util.Hashtable;

@@ -21,8 +21,8 @@ package com.github.gquintana.metrics.sql;
  */
 
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import io.micrometer.core.instrument.dropwizard.DropwizardMeterRegistry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,14 +37,14 @@ import static org.junit.Assert.*;
  * Test Statement wrapper
  */
 public class ResultSetTest {
-    private MetricRegistry metricRegistry;
+    private DropwizardMeterRegistry meterRegistry;
     private JdbcProxyFactory proxyFactory;
     private DataSource rawDataSource;
     private DataSource dataSource;
     @Before
     public void setUp() throws SQLException {
-        metricRegistry = new MetricRegistry();
-        proxyFactory = new JdbcProxyFactory(metricRegistry);
+        meterRegistry = MeterRegistryHelper.createDropwizardMeterRegistry();
+        proxyFactory = new JdbcProxyFactory(meterRegistry);
         rawDataSource = H2DbUtil.createDataSource();
         try(Connection connection = rawDataSource.getConnection()) {
             H2DbUtil.initTable(connection);
@@ -73,10 +73,10 @@ public class ResultSetTest {
         // Assert
         assertNotNull(connection);
         assertTrue(Proxy.isProxyClass(resultSet.getClass()));
-        Timer timer = metricRegistry.getTimers().get("java.sql.ResultSet.[select * from metrics_test]");
+        Timer timer = meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.ResultSet.[select * from metrics_test]");
         assertNotNull(timer);
         assertEquals(1L, timer.getCount());
-        Meter meter = metricRegistry.meter("java.sql.ResultSet.[select * from metrics_test].rows");
+        Meter meter = meterRegistry.getDropwizardRegistry().meter("java.sql.ResultSet.[select * from metrics_test].rows");
         assertNotNull(meter);
         assertEquals(11L, meter.getCount());
     }
@@ -101,13 +101,13 @@ public class ResultSetTest {
         Connection connection = rawDataSource.getConnection();
         Statement statement = connection.createStatement();
         String sql = "select * from METRICS_TEST order by ID";
-        ResultSet resultSet = MetricsSql.forRegistry(metricRegistry).wrap(statement.executeQuery(sql), sql);
+        ResultSet resultSet = MetricsSql.forRegistry(meterRegistry).wrap(statement.executeQuery(sql), sql);
 
         H2DbUtil.close(resultSet, statement, connection);
         // Assert
         assertNotNull(connection);
         assertTrue(Proxy.isProxyClass(resultSet.getClass()));
-        assertEquals(1, metricRegistry.getTimers().get("java.sql.ResultSet.[select * from metrics_test order by id]").getCount());
+        assertEquals(1, meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.ResultSet.[select * from metrics_test order by id]").getCount());
     }
 
 }

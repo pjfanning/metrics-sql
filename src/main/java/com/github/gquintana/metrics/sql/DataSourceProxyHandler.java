@@ -21,7 +21,6 @@ package com.github.gquintana.metrics.sql;
  */
 
 
-import com.codahale.metrics.Timer;
 import com.github.gquintana.metrics.proxy.MethodInvocation;
 
 import javax.sql.DataSource;
@@ -47,10 +46,10 @@ public class DataSourceProxyHandler extends JdbcProxyHandler<DataSource> {
     }
 
     private Connection getConnection(MethodInvocation<DataSource> methodInvocation) throws Throwable {
-        Timer.Context getTimerContext = getTimerStarter().startConnectionGetTimer();
+        TimeObservation getTimerContext = getTimerStarter().startConnectionGetTimer();
         Connection connection=(Connection) methodInvocation.proceed();
         stopTimer(getTimerContext);
-        connection= proxyFactory.wrapConnection(connection);
+        connection = proxyFactory.wrapConnection(connection);
         return connection;
     }
 }

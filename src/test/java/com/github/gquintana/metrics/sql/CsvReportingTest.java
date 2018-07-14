@@ -23,6 +23,7 @@ package com.github.gquintana.metrics.sql;
 import com.codahale.metrics.CsvReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import io.micrometer.core.instrument.dropwizard.DropwizardMeterRegistry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,7 +49,7 @@ import static org.junit.Assert.fail;
  */
 public class CsvReportingTest {
     private MBeanServer mBeanServer;
-    private MetricRegistry metricRegistry;
+    private DropwizardMeterRegistry meterRegistry;
     private JdbcProxyFactory proxyFactory;
     private DataSource rawDataSource;
     private DataSource dataSource;
@@ -59,11 +60,11 @@ public class CsvReportingTest {
     @Before
     public void setUp() throws SQLException, IOException {
         csvFolder = tmpFolderRule.newFolder("csv");
-        mBeanServer=ManagementFactory.getPlatformMBeanServer();
-        metricRegistry = new MetricRegistry();
-        csvReporter = CsvReporter.forRegistry(metricRegistry)
+        mBeanServer = ManagementFactory.getPlatformMBeanServer();
+        meterRegistry = MeterRegistryHelper.createDropwizardMeterRegistry();
+        csvReporter = CsvReporter.forRegistry(meterRegistry.getDropwizardRegistry())
                 .build(csvFolder);
-        proxyFactory = new JdbcProxyFactory(metricRegistry, new DefaultMetricNamingStrategy("csv"));
+        proxyFactory = new JdbcProxyFactory(meterRegistry, new DefaultMetricNamingStrategy("csv"));
         rawDataSource = H2DbUtil.createDataSource();
         try(Connection connection = rawDataSource.getConnection()) {
             H2DbUtil.initTable(connection);
@@ -94,8 +95,10 @@ public class CsvReportingTest {
             Timestamp timestamp = resultSet.getTimestamp("created");
         }
         H2DbUtil.close(resultSet, statement, preparedStatement, connection);
-        final SortedMap<String, Timer> timers = metricRegistry.getTimers();
-        csvReporter.report(metricRegistry.getGauges(), metricRegistry.getCounters(), metricRegistry.getHistograms(), metricRegistry.getMeters(), timers);
+        MetricRegistry dropwizardRegistry = meterRegistry.getDropwizardRegistry();
+        final SortedMap<String, Timer> timers = dropwizardRegistry.getTimers();
+        csvReporter.report(dropwizardRegistry.getGauges(), dropwizardRegistry.getCounters(), dropwizardRegistry.getHistograms(),
+                dropwizardRegistry.getMeters(), timers);
         // Check file
         File[] csvFiles = csvFolder.listFiles();
         if (csvFiles==null || csvFiles.length==0) {

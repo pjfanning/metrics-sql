@@ -20,8 +20,6 @@ package com.github.gquintana.metrics.sql;
  * #L%
  */
 
-
-import com.codahale.metrics.Timer;
 import com.github.gquintana.metrics.proxy.MethodInvocation;
 
 import java.sql.CallableStatement;
@@ -41,7 +39,7 @@ public class ConnectionProxyHandler extends JdbcProxyHandler<Connection> {
      * @param proxyFactory Strategy to create proxies
      * @param lifeTimerContext Started timed corresponding to connection life
      */
-    public ConnectionProxyHandler(Connection delegate, JdbcProxyFactory proxyFactory, Timer.Context lifeTimerContext) {
+    public ConnectionProxyHandler(Connection delegate, JdbcProxyFactory proxyFactory, TimeObservation lifeTimerContext) {
         super(delegate, Connection.class, proxyFactory, lifeTimerContext);
     }
 

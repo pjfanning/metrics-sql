@@ -20,9 +20,9 @@ package com.github.gquintana.metrics.sql;
  * #L%
  */
 
-import com.codahale.metrics.MetricRegistry;
 import com.github.gquintana.metrics.proxy.ProxyFactory;
 import com.github.gquintana.metrics.proxy.ReflectProxyFactory;
+import io.micrometer.core.instrument.MeterRegistry;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -35,12 +35,12 @@ public class MetricsSql {
      * Builder of {@link JdbcProxyFactory}
      */
     public static class Builder {
-        private final MetricRegistry registry;
+        private final MeterRegistry registry;
         private MetricNamingStrategy namingStrategy = new DefaultMetricNamingStrategy();
         private ProxyFactory proxyFactory = new ReflectProxyFactory();
         private JdbcProxyFactory jdbcProxyFactory;
 
-        public Builder(MetricRegistry registry) {
+        public Builder(MeterRegistry registry) {
             this.registry = registry;
         }
 
@@ -165,7 +165,7 @@ public class MetricsSql {
      * @param registry Metrics registry
      * @return Builder of {@link JdbcProxyFactory}
      */
-    public static Builder forRegistry(MetricRegistry registry) {
+    public static Builder forRegistry(MeterRegistry registry) {
         return new Builder(registry);
     }
 }

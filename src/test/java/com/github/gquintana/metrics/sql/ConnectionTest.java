@@ -21,6 +21,7 @@ package com.github.gquintana.metrics.sql;
  */
 
 import com.codahale.metrics.MetricRegistry;
+import io.micrometer.core.instrument.dropwizard.DropwizardMeterRegistry;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,12 +37,12 @@ import static org.junit.Assert.assertTrue;
  * Test connection wrapper
  */
 public class ConnectionTest {
-    private MetricRegistry metricRegistry;
+    private DropwizardMeterRegistry meterRegistry;
     private JdbcProxyFactory proxyFactory;
     @Before
     public void setUp() {
-        metricRegistry = new MetricRegistry();
-        proxyFactory = new JdbcProxyFactory(metricRegistry);
+        meterRegistry = MeterRegistryHelper.createDropwizardMeterRegistry();
+        proxyFactory = new JdbcProxyFactory(meterRegistry);
     }
     @Test
     public void testConnectionLife() throws SQLException {
@@ -50,7 +51,7 @@ public class ConnectionTest {
         H2DbUtil.close(connection);
         // Assert
         assertNotNull(connection);
-        assertNotNull(metricRegistry.getTimers().get("java.sql.Connection"));
+        assertNotNull(meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.Connection"));
         
     }
     @Test
