@@ -67,7 +67,7 @@ public class PreparedStatementTest {
         // Assert
         assertNotNull(connection);
         assertTrue(Proxy.isProxyClass(statement.getClass()));
-        assertNotNull(meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.PreparedStatement.[select * from metrics_test]"));
+        assertNotNull(meterRegistry.getDropwizardRegistry().getTimers().get("javaSqlPreparedStatement[select * from metrics_test]"));
         
     }
     @Test
@@ -80,7 +80,7 @@ public class PreparedStatementTest {
         // Assert
         assertNotNull(connection);
         assertTrue(Proxy.isProxyClass(resultSet.getClass()));
-        assertNotNull(meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.PreparedStatement.[select * from metrics_test].exec"));
+        assertNotNull(meterRegistry.getDropwizardRegistry().getTimers().get("javaSqlPreparedStatement[select * from metrics_test]Exec"));
         
     }
     @Test(expected = Exception.class)
@@ -93,7 +93,7 @@ public class PreparedStatementTest {
         // Assert
         assertNotNull(connection);
         assertTrue(Proxy.isProxyClass(resultSet.getClass()));
-        assertNotNull(meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.PreparedStatement.[select * from metrics_test order by created desc].exec"));
+        assertNotNull(meterRegistry.getDropwizardRegistry().getTimers().get("javaSqlPreparedStatement[select * from metrics_test order by created desc]Exec"));
         
     }
 
@@ -108,7 +108,7 @@ public class PreparedStatementTest {
         // Assert
         assertNotNull(connection);
         assertTrue(Proxy.isProxyClass(resultSet.getClass()));
-        assertEquals(1, meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.PreparedStatement.[select * from metrics_test order by id].exec").getCount());
+        assertEquals(1, meterRegistry.getDropwizardRegistry().getTimers().get("javaSqlPreparedStatement[select * from metrics_test order by id]Exec").getCount());
     }
 
 }

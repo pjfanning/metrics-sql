@@ -73,10 +73,10 @@ public class ResultSetTest {
         // Assert
         assertNotNull(connection);
         assertTrue(Proxy.isProxyClass(resultSet.getClass()));
-        Timer timer = meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.ResultSet.[select * from metrics_test]");
+        Timer timer = meterRegistry.getDropwizardRegistry().getTimers().get("javaSqlResultSet[select * from metrics_test]");
         assertNotNull(timer);
         assertEquals(1L, timer.getCount());
-        Meter meter = meterRegistry.getDropwizardRegistry().meter("java.sql.ResultSet.[select * from metrics_test].rows");
+        Meter meter = meterRegistry.getDropwizardRegistry().meter("javaSqlResultSet[select * from metrics_test]Rows");
         assertNotNull(meter);
         assertEquals(11L, meter.getCount());
     }
@@ -107,7 +107,7 @@ public class ResultSetTest {
         // Assert
         assertNotNull(connection);
         assertTrue(Proxy.isProxyClass(resultSet.getClass()));
-        assertEquals(1, meterRegistry.getDropwizardRegistry().getTimers().get("java.sql.ResultSet.[select * from metrics_test order by id]").getCount());
+        assertEquals(1, meterRegistry.getDropwizardRegistry().getTimers().get("javaSqlResultSet[select * from metrics_test order by id]").getCount());
     }
 
 }
