@@ -19,12 +19,12 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
-            <version>1.0.5</version>
+            <version>1.5.0</version>
         </dependency>
         <dependency>
             <groupId>cglib</groupId>
             <artifactId>cglib</artifactId>
-            <version>3.2.5</version>
+            <version>3.3.0</version>
             <!-- Required only for CGLibProxyFactory -->
             <optional>true</optional>
         </dependency>
@@ -50,7 +50,7 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>1.4.196</version>
+            <version>1.4.200</version>
             <scope>test</scope>
         </dependency>
         <dependency>
